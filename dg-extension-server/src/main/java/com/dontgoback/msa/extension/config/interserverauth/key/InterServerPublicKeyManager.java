@@ -54,8 +54,9 @@ public class InterServerPublicKeyManager {
      */
     private void loadPublicKey(){
         try{
-            String endPoint = interServerKeyProperties.getPublicKeyApiUrl();
+            String endPoint = interServerKeyProperties.getPublicKeyApi();
             log.info("Fetching public key from: {}", endPoint);
+
 
             // 최대 3초 지나면 타임아웃 : HttpClientConfig
             ResponseEntity<String> response = restTemplate.getForEntity(endPoint, String.class);

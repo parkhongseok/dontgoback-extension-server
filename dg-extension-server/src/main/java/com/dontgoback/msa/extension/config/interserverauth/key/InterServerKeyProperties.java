@@ -10,5 +10,5 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public class InterServerKeyProperties {
-    private String publicKeyApiUrl;
+    private String publicKeyApi;
 }

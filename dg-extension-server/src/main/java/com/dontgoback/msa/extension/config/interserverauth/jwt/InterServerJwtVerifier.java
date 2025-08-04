@@ -10,10 +10,15 @@ package com.dontgoback.msa.extension.config.interserverauth.jwt;
 import com.dontgoback.msa.extension.config.interserverauth.client.InterServerAuthClientProperties;
 import com.dontgoback.msa.extension.config.interserverauth.key.InterServerPublicKeyManager;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import java.security.interfaces.RSAPublicKey;
@@ -32,6 +37,7 @@ public class InterServerJwtVerifier {
     private final InterServerJwtProperties jwtProperties;
     private final InterServerAuthClientProperties clientProperties;
     private final InterServerPublicKeyManager publicKeyManager;
+    private final UserDetailsService userDetailsService;
 
     /**
      * 서버 간 인증용 JWT의 유효성을 검증합니다.
@@ -47,13 +53,15 @@ public class InterServerJwtVerifier {
                 log.warn("JWT issuer 불일치: {}", claims.getIssuer());
                 throw new IllegalArgumentException("잘못된 issuer");
             }
-
             if (!subjectMatches(claims)) {
                 log.warn("JWT subject(clientId) 불일치: {}", claims.getSubject());
                 throw new IllegalArgumentException("잘못된 clientId");
             }
             return claims;
 
+        } catch (ExpiredJwtException e) {
+            log.warn("만료된 토큰입니다: {}", e.getMessage());
+            throw new IllegalArgumentException("만료된 서버 인증 토큰입니다.");
         } catch (JwtException e) {
             log.warn("JWT 서명 검증 실패 또는 파싱 에러", e);
             throw new IllegalArgumentException("유효하지 않은 서버 인증 토큰입니다.");
@@ -63,7 +71,17 @@ public class InterServerJwtVerifier {
         }
     }
 
-    public String getClientId(Claims claims){
+    public Authentication getAuthentication(Claims claims){
+        String clientId = getClientId(claims);
+        UserDetails authUser = userDetailsService.loadUserByUsername(clientId);
+        return new UsernamePasswordAuthenticationToken(
+                // principal : 인증된 사용자 정보
+                // Credentals : 무엇으로 인증했는가 기록하는 부분 (보안을 위해 비워둠)
+                authUser, "", authUser.getAuthorities()
+        );
+    }
+
+    private String getClientId(Claims claims){
         return claims.getSubject();
     }
 
@@ -85,7 +103,7 @@ public class InterServerJwtVerifier {
         return Jwts.parserBuilder()
                 .setSigningKey(publicKey)
                 .build()
-                .parseClaimsJws(token)
+                .parseClaimsJws(token)  // 여기서 자동으로 만료시간도 검증함
                 .getBody();
     }
 }

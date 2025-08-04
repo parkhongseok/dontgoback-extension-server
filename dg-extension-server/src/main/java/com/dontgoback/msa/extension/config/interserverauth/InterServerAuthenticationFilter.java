@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.Collections;
 */
 
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class InterServerAuthenticationFilter extends OncePerRequestFilter {
 
@@ -36,15 +39,15 @@ public class InterServerAuthenticationFilter extends OncePerRequestFilter {
              FilterChain filterChain
     ) throws ServletException, IOException {
         try {
+            // 헤더에서 JWT 받아오기
             String token = extractToken(request);
+            // 토큰 검증 및 내용 반환
             Claims claims = jwtVerifier.parseAndValidate(token);
-            String clientId = jwtVerifier.getClientId(claims);
-
-            // 서버 간 인증이므로 권한 정보 없음
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(clientId, null, Collections.emptyList());
-
+            // 인증 객체 생성 (권한은 없음, clientId만 포함)
+            Authentication authentication = jwtVerifier.getAuthentication(claims);
+            // SecurityContext 에 Authentication 객체를 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
             log.debug("서버 간 인증 성공");
         } catch (Exception e) {
             log.error("서버 간 인증 필터 오류", e);
