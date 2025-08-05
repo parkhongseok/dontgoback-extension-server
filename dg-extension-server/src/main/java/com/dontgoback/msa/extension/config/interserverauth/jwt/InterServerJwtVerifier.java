@@ -7,7 +7,7 @@ package com.dontgoback.msa.extension.config.interserverauth.jwt;
  * 서명 검증에는 InterServerPublicKeyManager가 제공하는 공개키를 사용
  */
 
-import com.dontgoback.msa.extension.config.interserverauth.client.InterServerAuthClientProperties;
+import com.dontgoback.msa.extension.config.interserverauth.client.InterServerClientProperties;
 import com.dontgoback.msa.extension.config.interserverauth.key.InterServerPublicKeyManager;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -35,7 +35,7 @@ import java.security.interfaces.RSAPublicKey;
 public class InterServerJwtVerifier {
 
     private final InterServerJwtProperties jwtProperties;
-    private final InterServerAuthClientProperties clientProperties;
+    private final InterServerClientProperties clientProperties;
     private final InterServerPublicKeyManager publicKeyManager;
     private final UserDetailsService userDetailsService;
 

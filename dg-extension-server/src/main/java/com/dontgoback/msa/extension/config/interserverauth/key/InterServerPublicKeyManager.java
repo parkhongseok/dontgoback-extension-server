@@ -28,6 +28,7 @@ public class InterServerPublicKeyManager {
 
     /**
      * 애플리케이션 시작 시, 최초 1회 공개키를 불러옴
+     * @PostConstruct는 스프링이 빈을 초기화할 때 실행되는 메서드
      */
     @PostConstruct
     public void init() {
@@ -70,6 +71,11 @@ public class InterServerPublicKeyManager {
             }
         } catch (Exception e){
             log.error("공개키 파싱 실패", e);
+            /** graceful degradation 전략:
+             * 이 메서드에서 실패했지만 throw e 하지 않았으므로,
+             * Spring 애플리케이션은 종료되지 않고 정상 기동
+             * 그러나 publicKey == null이므로, 이후 JwtVerifier나 Signature 사용 시 검증 실패가 발생
+             */
         }
     }
 
