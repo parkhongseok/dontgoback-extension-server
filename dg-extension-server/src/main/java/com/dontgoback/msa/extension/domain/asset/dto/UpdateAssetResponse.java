@@ -7,5 +7,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class UpdateAssetResponse {
+    private long userId;
     private long asset;
 }

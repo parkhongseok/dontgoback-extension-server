@@ -3,22 +3,29 @@ package com.dontgoback.msa.extension.domain.asset;
 import com.dontgoback.msa.extension.domain.asset.dto.UpdateAssetRequest;
 import com.dontgoback.msa.extension.domain.asset.dto.UpdateAssetResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssetService {
+    private final int MAX_RATIO = 10;
+    private final int MIN_RATIO = -10;
 
-    public UpdateAssetResponse updateAsset(UpdateAssetRequest request) {
-        long asset = request.getAsset();
+    public UpdateAssetResponse updateAsset(long userId, UpdateAssetRequest request) {
+        long originalAsset = request.getAsset();
 
         Random random = new Random();
-        // 난수를 사용하여 -5000 ~ 5000 사이의 값을 생성 > 추후 api로 입력받을 예정
-        int maxAmount = 10;
-        int minAmount = -10;
-        int percent = random.nextInt(maxAmount - minAmount + 1) + minAmount;
-        return new UpdateAssetResponse(asset*percent);
+        int percent = random.nextInt(MAX_RATIO - MIN_RATIO + 1) + MIN_RATIO;
+
+        long updatedAsset = originalAsset*percent;
+
+        log.info("💰 [userId: {}] 자산 갱신 완료 - 기존: {}, 갱신 후: {} (변동률: {}%)",
+                userId, originalAsset, updatedAsset, percent);
+
+        return new UpdateAssetResponse(userId, updatedAsset);
     }
 }

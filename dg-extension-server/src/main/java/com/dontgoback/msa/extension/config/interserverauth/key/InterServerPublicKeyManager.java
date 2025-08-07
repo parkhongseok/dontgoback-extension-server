@@ -59,7 +59,7 @@ public class InterServerPublicKeyManager {
             log.info("Fetching public key from: {}", endPoint);
 
 
-            // 최대 3초 지나면 타임아웃 : HttpClientConfig
+            // 최대 3초 지나면 타임아웃 : InterServerHttpClientConfig
             ResponseEntity<String> response = restTemplate.getForEntity(endPoint, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
