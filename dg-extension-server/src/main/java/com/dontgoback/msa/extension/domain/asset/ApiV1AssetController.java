@@ -3,10 +3,10 @@ package com.dontgoback.msa.extension.domain.asset;
 import com.dontgoback.msa.extension.domain.asset.dto.UpdateAssetResponse;
 import com.dontgoback.msa.extension.domain.asset.dto.UpdateAssetRequest;
 import com.dontgoback.msa.extension.responseDto.ResData;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.*;
 public class ApiV1AssetController {
     private final AssetService assetService;
 
-    @PostMapping("/update-asset/{user-id}")
+    @PostMapping("/update-asset/{userId}")
     public ResponseEntity<ResData<UpdateAssetResponse>> updateAsset(
-            @PathVariable("user-id") long userId,
-            @Valid  @RequestBody UpdateAssetRequest request
+            @PathVariable("userId") long userId,
+            @RequestBody @Validated UpdateAssetRequest request
     ) {
         try {
             UpdateAssetResponse response = assetService.updateAsset(userId, request);

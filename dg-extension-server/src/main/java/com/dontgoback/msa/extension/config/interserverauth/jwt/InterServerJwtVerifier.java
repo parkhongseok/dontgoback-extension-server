@@ -7,7 +7,6 @@ package com.dontgoback.msa.extension.config.interserverauth.jwt;
  * 서명 검증에는 InterServerPublicKeyManager가 제공하는 공개키를 사용
  */
 
-import com.dontgoback.msa.extension.config.interserverauth.client.InterServerClientProperties;
 import com.dontgoback.msa.extension.config.interserverauth.key.InterServerPublicKeyManager;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -17,11 +16,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 전제 조건
@@ -35,9 +38,8 @@ import java.security.interfaces.RSAPublicKey;
 public class InterServerJwtVerifier {
 
     private final InterServerJwtProperties jwtProperties;
-    private final InterServerClientProperties clientProperties;
+//    private final InterServerClientProperties clientProperties;
     private final InterServerPublicKeyManager publicKeyManager;
-    private final UserDetailsService userDetailsService;
 
     /**
      * 서버 간 인증용 JWT의 유효성을 검증합니다.
@@ -53,10 +55,10 @@ public class InterServerJwtVerifier {
                 log.warn("JWT issuer 불일치: {}", claims.getIssuer());
                 throw new IllegalArgumentException("잘못된 issuer");
             }
-            if (!subjectMatches(claims)) {
-                log.warn("JWT subject(clientId) 불일치: {}", claims.getSubject());
-                throw new IllegalArgumentException("잘못된 clientId");
-            }
+//            if (!subjectMatches(claims)) {
+//                log.warn("JWT subject(clientId) 불일치: {}", claims.getSubject());
+//                throw new IllegalArgumentException("잘못된 clientId");
+//            }
             return claims;
 
         } catch (ExpiredJwtException e) {
@@ -71,14 +73,27 @@ public class InterServerJwtVerifier {
         }
     }
 
-    public Authentication getAuthentication(Claims claims){
-        String clientId = getClientId(claims);
-        UserDetails authUser = userDetailsService.loadUserByUsername(clientId);
-        return new UsernamePasswordAuthenticationToken(
-                // principal : 인증된 사용자 정보
-                // Credentals : 무엇으로 인증했는가 기록하는 부분 (보안을 위해 비워둠)
-                authUser, "", authUser.getAuthorities()
-        );
+    /** M2M: 로컬 유저 조회 없이 곧장 Authentication 생성 */
+    public Authentication getAuthentication(Claims claims) {
+        String clientId = claims.getSubject(); // 예: "dontgoback-core-server"
+
+        // (선택) 허용 클라이언트 화이트리스트
+        // if (!allowedClients.contains(clientId)) throw new BadCredentialsException("unknown client");
+
+        var authorities = AuthorityUtils.createAuthorityList("ROLE_INTERSERVER");
+
+        // 커스텀 Principal 불필요 — 문자열로 충분
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(clientId, null, authorities);
+
+        // 컨트롤러/로깅에서 쓰려고 클레임을 details에 실어두기
+        auth.setDetails(Map.of(
+                "iss", claims.getIssuer(),
+                "sub", clientId,
+                "exp", claims.getExpiration()
+        ));
+
+        return auth;
     }
 
     private String getClientId(Claims claims){
@@ -90,12 +105,12 @@ public class InterServerJwtVerifier {
         String allowedIssuer = jwtProperties.getIssuer();
         return allowedIssuer.equals(issuer);
     }
-
-    private boolean subjectMatches(Claims claims) {
-        String clientId = claims.getSubject(); // subject에 clientId를 검증
-        String allowedClientId = clientProperties.getId();
-        return allowedClientId.equals(clientId);
-    }
+//
+//    private boolean subjectMatches(Claims claims) {
+//        String clientId = claims.getSubject(); // subject에 clientId를 검증
+//        String allowedClientId = clientProperties.getId();
+//        return allowedClientId.equals(clientId);
+//    }
 
     private Claims getClaims(String token) {
         RSAPublicKey publicKey = publicKeyManager.getPublicKey();
