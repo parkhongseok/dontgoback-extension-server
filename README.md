@@ -1,8 +1,8 @@
 # dontgoback-extension-server
 
-# 1. 프로젝트 개요
-
 ![msa-system-architecture-overview](/docs/architecture/src/msa-system-architecture-overview.png)
+
+# 1. 프로젝트 개요
 
 ### 소개
 
@@ -14,7 +14,7 @@
 
 확장 서버는 모든 요청에 대해 해당 JWT의 유효성을 검사 후 비즈니스 로직을 수행합니다.
 
-개발 및 배포는 **경량화된 인프라(Raspberry Pi)** 를 기반으로 하며, 단위, 통합 테스트를 실행하고,
+개발 및 배포는 **경량화된 인프라(Raspberry Pi)** 를 기반으로 하며, 단위, 통합 테스트를 실행하고,  
 Docker + GitHub Actions 기반 CI/CD 자동화도 함께 구축하고 있습니다.
 
 ### 기간
