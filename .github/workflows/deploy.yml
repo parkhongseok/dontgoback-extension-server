@@ -31,7 +31,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./
+          context: ./dg-extension-server
           platforms: ${{ env.TARGET_PLATFORM }}
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           load: true
