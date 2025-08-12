@@ -65,7 +65,7 @@ jobs:
           docker save ${IMAGE_NAME}:${GITHUB_SHA} \
           | ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} 'docker load'
 
-          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
+          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<EOSSH
           set -e
           docker tag ext-server:${GITHUB_SHA} ext-server:current
           # auth가 healthy인 상태에서 ext만 교체 기동
