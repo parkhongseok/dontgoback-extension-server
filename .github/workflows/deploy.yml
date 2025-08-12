@@ -1,0 +1,137 @@
+name: Deploy Extension Server
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ext-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    if: github.event_name != 'workflow_dispatch' && contains(github.event.head_commit.message, 'deploy') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: ext-server
+      TARGET_PLATFORM: linux/arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          platforms: ${{ env.TARGET_PLATFORM }}
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.RPI_SSH_KEY }}
+
+      - name: Debug DNS Resolution
+        run: |
+          echo "Attempting to resolve ${{ secrets.RPI_HOST }}"
+          nslookup ${{ secrets.RPI_HOST }} || true
+
+      - name: Add Raspberry Pi host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.RPI_HOST_KEY }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy to Raspberry Pi
+        env:
+          RPI_HOST: ${{ secrets.RPI_HOST }}
+          RPI_USER: ${{ secrets.RPI_USER }}
+          RPI_SSH_PORT: ${{ secrets.RPI_SSH_PORT }}
+          GITHUB_SHA: ${{ github.sha }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          set -e
+          docker save ${IMAGE_NAME}:${GITHUB_SHA} \
+          | ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} 'docker load'
+
+          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
+          set -e
+          docker tag ext-server:${GITHUB_SHA} ext-server:current
+          # auth가 healthy인 상태에서 ext만 교체 기동
+          docker compose -f /home/phs/dgb/compose/docker-compose.yml up -d --force-recreate --no-deps ext
+          EOSSH
+
+      - name: Smoke test (port open)
+        if: success()
+        env:
+          RPI_USER: ${{ secrets.RPI_USER }}
+          RPI_HOST: ${{ secrets.RPI_HOST }}
+          RPI_SSH_PORT: ${{ secrets.RPI_SSH_PORT }}
+        run: |
+          # 최대 60초 재시도: 8092 포트가 LISTEN 상태인지 확인
+          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
+            set -e
+            echo "--- Checking ext port 8092 (timeout: 60s) ---"
+            for i in {1..12}; do
+              if nc -z localhost 8092; then
+                echo "Port 8092 is open. Smoke test PASSED."
+                exit 0
+              fi
+              echo "Attempt $i/12 failed. Retrying in 5s..."
+              sleep 5
+            done
+            echo "FAIL: Port 8092 did not open in time."
+            exit 1
+          EOSSH
+
+      - name: Collect remote logs on failure
+        if: failure()
+        env:
+          RPI_USER: ${{ secrets.RPI_USER }}
+          RPI_HOST: ${{ secrets.RPI_HOST }}
+          RPI_SSH_PORT: ${{ secrets.RPI_SSH_PORT }}
+        run: |
+          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
+            set +e
+            echo "===== [compose ps] 현재 서비스 상태 ====="
+            cd /home/phs/dgb/compose && docker compose ps
+            echo
+            echo "===== [compose logs] ext 최근 200줄 ====="
+            docker compose logs --tail=200 ext
+            echo
+            echo "===== [docker ps -a] 최근 컨테이너 목록 ====="
+            docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}" | head -n 20
+            echo
+            echo "===== [system df] 도커 디스크 사용량 ====="
+            docker system df
+          EOSSH
+
+      - name: Remote disk cleanup (Docker images)
+        if: always()
+        env:
+          RPI_USER: ${{ secrets.RPI_USER }}
+          RPI_HOST: ${{ secrets.RPI_HOST }}
+          RPI_SSH_PORT: ${{ secrets.RPI_SSH_PORT }}
+        run: |
+          ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
+          set -e
+          echo "===== [BEFORE] docker system df ====="
+          docker system df || true
+          echo
+          docker image prune -f || true
+          docker image prune -a -f --filter "until=168h" || true
+          echo
+          echo "===== [AFTER] docker system df ====="
+          docker system df || true
+          EOSSH
