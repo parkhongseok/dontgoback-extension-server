@@ -1,7 +1,7 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.4'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.4.0'
+	id 'io.spring.dependency-management' version '1.1.6'
 }
 
 group = 'com.dontgoback.msa.extension'
@@ -24,14 +24,40 @@ repositories {
 }
 
 dependencies {
+	// === Core ===
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// === JWT ===
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5' 		// 인터페이스 정의
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'   		// 실제 로직
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'   	// Claims <-> JSON
+
+	// === Lombok ===
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
+
+	// === Dev ===
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// === Caffeine 캐시 ===
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+	// === Test ===
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.mockito:mockito-core'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+
+bootJar {
+	layered {}
 }

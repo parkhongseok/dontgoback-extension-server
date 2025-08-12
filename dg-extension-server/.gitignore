@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+.env
+application-secret.yml
+application-prod.yml
+application-test.yml
