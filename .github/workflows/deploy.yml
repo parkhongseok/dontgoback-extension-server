@@ -79,12 +79,12 @@ jobs:
           RPI_HOST: ${{ secrets.RPI_HOST }}
           RPI_SSH_PORT: ${{ secrets.RPI_SSH_PORT }}
         run: |
-          # 최대 60초 재시도: 8092 포트가 LISTEN 상태인지 확인
           ssh -p ${RPI_SSH_PORT} ${RPI_USER}@${RPI_HOST} <<'EOSSH'
             set -e
-            echo "--- Checking ext port 8092 (timeout: 60s) ---"
+            echo "--- Checking ext port 8092 with bash (timeout: 60s) ---"
             for i in {1..12}; do
-              if nc -z localhost 8092; then
+              # Bash의 내장 기능을 사용해 TCP 연결을 시도하고, 성공/실패 여부만 확인
+              if (</dev/tcp/localhost/8092) &>/dev/null; then
                 echo "Port 8092 is open. Smoke test PASSED."
                 exit 0
               fi
