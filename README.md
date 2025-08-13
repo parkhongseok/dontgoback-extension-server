@@ -52,7 +52,7 @@ Docker + GitHub Actions 기반 CI/CD 자동화도 함께 구축하고 있습니�
 
 ![msa-system-architecture](/docs/architecture/src/msa-system-architecture.png)
 
-### ① 공개키 기반 JWT 인증 구조
+### ① 공개키 기반 JWT 검증
 
 - 인증 서버에서 `/msa/auth/api/public-key` 로부터 1회 요청을 통해 공개키를 로딩
 - `X509EncodedKeySpec` 방식으로 파싱 후 메모리에 저장하여, 모든 요청 검증에 재사용
