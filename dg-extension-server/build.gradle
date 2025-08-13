@@ -60,6 +60,7 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+
 bootJar {
 	layered {}
 }
