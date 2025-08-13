@@ -24,13 +24,20 @@ import java.util.Collections;
 */
 
 @Slf4j
-@Component
+//@Component -> 컴포넌트 제거 후 config에서 직접 주입 왜냐면 자꾸 필터가 전역으로 적용됨
 @RequiredArgsConstructor
 public class InterServerAuthenticationFilter extends OncePerRequestFilter {
 
     private final InterServerJwtVerifier jwtVerifier;
     private final static String HEADER_AUTHORIZATION = "Authorization";
     private final static String TOKEN_PREFIX = "Bearer ";
+
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) {
+//        String uri = request.getRequestURI();
+//        // base-path 바꿨다면 "/actuator/" 대신 그 경로로
+//        return uri.startsWith("/actuator/");
+//    }
 
     @Override
     protected void doFilterInternal(
