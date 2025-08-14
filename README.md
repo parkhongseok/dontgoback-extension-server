@@ -74,7 +74,7 @@ Docker + GitHub Actions 기반 CI/CD 자동화도 함께 구축하고 있습니�
 
 <br/>
 
-### ④ 빌드 및 배포 자동화 (진행 중)
+### ④ 빌드 및 배포 자동화
 
 - Docker 기반 컨테이너화 예정
 - GitHub Actions 기반 CI/CD 자동화 구축 중
