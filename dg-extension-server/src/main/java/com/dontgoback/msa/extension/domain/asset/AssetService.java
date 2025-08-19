@@ -61,23 +61,24 @@ public class AssetService {
      */
     public UpdateAssetResponse updateAsset(long userId, UpdateAssetRequest req) {
         Objects.requireNonNull(req, "request must not be null");
+
         Long originalBoxed = req.getAsset();
         if (originalBoxed == null) throw new IllegalArgumentException("asset must not be null");
+
         long original = originalBoxed;
         if (original < 0) throw new IllegalArgumentException("asset must be >= 0");
 
-        // clock.withZone(zoneId)가 더 이상 필요 없습니다. clock 자체가 이미 올바른 타임존을 가집니다.
-        LocalDate today = LocalDate.now(clock);
-        String key = userId + "|" + today;
+        LocalDate snapshotDay = (req.getSnapshotDay() != null) ? req.getSnapshotDay() : LocalDate.now(clock);
+        String key = userId + "|" + snapshotDay;
 
         double multiplier = dailyMultiplier.get(key, k -> generateMultiplier());
         long updated = Math.max(0L, Math.round(original * multiplier));
 
         double pct = (multiplier - 1.0) * 100.0;
         log.info("updateAsset userId={} date={} original={} multiplier={} updated={} change={}%",
-                userId, today, original, String.format("%.6f", multiplier), updated, String.format("%.2f", pct));
+                userId, snapshotDay, original, String.format("%.6f", multiplier), updated, String.format("%.2f", pct));
 
-        return new UpdateAssetResponse(userId, original, multiplier, updated, today.toString());
+        return new UpdateAssetResponse(userId, original, multiplier, updated, snapshotDay.toString());
     }
 
     /**
