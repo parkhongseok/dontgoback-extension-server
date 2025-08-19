@@ -36,7 +36,7 @@ Docker + GitHub Actions 기반 CI/CD 파이프라인을 구축하였습니다.
 | Infrastructure |        Raspberry Pi        |   -    |
 |     DevOps     |  GitHub Actions / Docker   |   -    |
 
-### 연관 프로젝트
+### 연관 프로젝트 
 
 - 코어 서버 GitHub 주소:
   [https://github.com/core](https://github.com/parkhongseok/projectDontGoBack)
